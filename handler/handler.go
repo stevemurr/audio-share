@@ -55,7 +55,7 @@ func (h *Handler) Upload(c echo.Context) error {
 
 // List --
 func (h *Handler) List(c echo.Context) error {
-	return c.JSON(http.StatusOK, h.DB)
+	return c.JSONPretty(http.StatusOK, h.DB, "  ")
 }
 
 // GetFile --
