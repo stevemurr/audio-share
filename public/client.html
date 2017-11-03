@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="theme-color" content="#000000">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/1.4.0/wavesurfer.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/1.4.0/plugin/wavesurfer.regions.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/1.4.0/plugin/wavesurfer.minimap.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.6.0/css/bulma.min.css" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <title>Audio Annotater</title>
+</head>
+
+<body>
+  <div class="container">
+    <section class="hero">
+      <div class="hero-body">
+        <div class="container">
+          <h1 id="name" class="title">
+            Filename
+          </h1>
+          <h2 id="mod" class="subtitle">
+            Link
+          </h2>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div id="waveform"></div>
+  <br>
+  <div class="container">
+    <div class="columns">
+      <div class="m-t-10 column">
+        <textarea id="text" class="textarea" placeholder="Click or create a region then write a note here"></textarea>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
+<script>
+  const baseURL = window.location.origin
+  const timeBeforeSync = 250;
+  const elName = document.getElementById("name")
+  const elHash = document.getElementById("mod")
+  const elRegions = document.getElementById("regions")
+
+  var syncTimer;
+  var regions = {};
+  var selectedRegion;
+  var wavesurfer;
+  var currentURL = window.location.href.split("/")
+  audioID = currentURL.slice(currentURL.length - 1, currentURL.length)
+
+  dataURL = baseURL + "/api/files/" + audioID[0] + "/data"
+  audioInfoURL = baseURL + "/api/files/" + audioID[0]
+  updateURL = baseURL + "/" + audioID
+
+  window.onkeydown = function(e) {
+    if (e.keyCode == 32 && e.target == document.body) {
+      e.preventDefault();
+      wavesurfer.playPause();
+    }
+  };
+
+  const textArea = document.getElementById("text")
+  textArea.onkeyup = (e) => {
+    clearInterval(syncTimer)
+    syncTimer = setInterval(() => {
+      SYNC(regions)
+      clearInterval(syncTimer)
+    }, timeBeforeSync)
+    const _value = e.target.value;
+    const _id = selectedRegion.id
+    regions[_id].notes = _value
+  }
+
+  // deleteKey takes an object and key as input and returns a new copy of the dictionary
+  // with that key ommitted.  Using delete did not seem to work.  
+  function deleteKey(_dict, _id) {
+    _newDict = {}
+    for (var _key in _dict) {
+      if (_key !== _id) {
+        _newDict[_key] = _dict[_key]
+      }
+    }
+    return _newDict
+  }
+
+  function setNotes(_note) {
+    if (!_note) {
+      textArea.value = ""
+    } else {
+      textArea.value = _note
+    }
+  }
+
+  function SYNC(_regions) {
+    var _current = [];
+    for (var _key in _regions) {
+      _current.push({
+        start: _regions[_key].start,
+        end: _regions[_key].end,
+        notes: _regions[_key].notes
+      })
+    }
+    var headers = new Headers()
+    headers.append("Content-Type", "application/json")
+    var options = {
+      method: "POST",
+      body: JSON.stringify(_current),
+      headers: headers
+    }
+    POST(updateURL, options, (res, err) => {
+      if (err) {
+        console.log(err)
+        return
+      }
+      console.log("Synced!")
+    })
+  }
+
+  function POST(_url, _options, callback) {
+    fetch(_url, _options).then((res) => {
+      callback(res, undefined)
+    }).catch((err) => {
+      callback(undefined, err)
+    })
+  }
+
+  function GET(_url, callback) {
+    fetch(_url).then((res) => {
+      return res.json();
+    }).then((j) => {
+      callback(j, undefined)
+    }).catch((err) => {
+      callback(undefined, err)
+    })
+  }
+
+  var wavesurfer = WaveSurfer.create({
+    container: '#waveform',
+    height: 192,
+    barWidth: 3,
+    interact: false
+  });
+
+  // Region created
+  wavesurfer.on('region-created', (e) => {
+    const _id = e.id
+    regions[_id] = e
+    selectedRegion = e
+    setNotes("")
+  });
+
+  // Region has been updated
+  wavesurfer.on('region-update-end', (e) => {
+    const _id = e.id
+    regions[_id] = e
+    selectedRegion = e
+    const _notes = regions[_id].notes
+    setNotes(_notes)
+    SYNC(regions)
+  });
+
+
+  // Select a region
+  wavesurfer.on('region-click', (e) => {
+    const _id = e.id
+    const _notes = regions[_id].notes
+
+    wavesurfer.play(e.start, [e.end])
+    selectedRegion = e
+    setNotes(_notes)
+  });
+
+
+  wavesurfer.on('region-removed', (e) => {})
+  // Delete the region
+  wavesurfer.on('region-dblclick', (e) => {
+    const _id = e.id
+    delete regions._id
+    regions = deleteKey(regions, _id)
+    e.remove()
+    SYNC(regions)
+    wavesurfer.stop()
+  });
+
+  wavesurfer.load(dataURL);
+
+  var minimap;
+  wavesurfer.on('ready', function () {
+    wavesurfer.enableDragSelection({});
+    minimap = wavesurfer.initMinimap({
+      height: 30,
+      waveColor: '#ddd',
+      progressColor: '#999',
+      cursorColor: '#68A93D',
+      barHeight: 1.4,
+      interact: true
+    });
+
+    init();
+  })
+
+  // init grabs any needed state from the server and initializes variables
+  function init() {
+
+    // Get regions for the current item
+    GET(audioInfoURL, (res, err) => {
+      if (err) {
+        console.log(err)
+        return
+      }
+
+      // Populate title info
+      elName.innerHTML = res.name;
+      elHash.innerHTML = baseURL + "/" + res.hash;
+      if (!res.regions) {
+        return
+      }
+      for (var idx in res.regions) {
+        const _start = res.regions[idx].start
+        const _end = res.regions[idx].end
+        _region = wavesurfer.addRegion({
+          start: _start,
+          end: _end
+        })
+        const _id = _region.id
+        regions[_id].notes = res.regions[idx].notes
+      }
+    })
+  }
+</script>
