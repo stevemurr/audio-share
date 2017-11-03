@@ -1,12 +1,21 @@
 package main
 
 import (
+	"flag"
 	"murrman/audio-share/handler"
 	"murrman/audio-share/storage/inmem"
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
+
+var (
+	listenAddr = flag.String("addr", ":1323", "listen addr")
+)
+
+func init() {
+	flag.Parse()
+}
 
 func main() {
 	e := echo.New()
@@ -25,5 +34,5 @@ func main() {
 	e.GET("/api/files", h.List)
 	e.GET("/api/files/:file", h.GetFile)
 	e.GET("/api/files/:file/data", h.GetPayload)
-	e.Logger.Fatal(e.Start(":1323"))
+	e.Logger.Fatal(e.Start(*listenAddr))
 }
