@@ -50,7 +50,8 @@ func (h *Handler) Upload(c echo.Context) error {
 		Hash:       getMD5Hash(dst.String()),
 	}
 	h.DB.PutAudio(audio.Hash, audio)
-	return c.HTML(http.StatusOK, fmt.Sprintf("%s", audio.Hash))
+	return c.Redirect(http.StatusOK, fmt.Sprintf("http://audio-share.2017ditrfest.info/%s", audio.Hash))
+	// return c.HTML(http.StatusOK, fmt.Sprintf("%s", audio.Hash))
 }
 
 // List --
