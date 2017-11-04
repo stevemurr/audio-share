@@ -37,6 +37,7 @@
       </div>
     </div>
   </div>
+
 </body>
 
 </html>
@@ -47,6 +48,9 @@
   const elHash = document.getElementById("mod")
   const elRegions = document.getElementById("regions")
 
+  var loop = false;
+  var lastRegionStart;
+  var lastRegionEnd;
   var syncTimer;
   var regions = {};
   var selectedRegion;
@@ -58,10 +62,14 @@
   audioInfoURL = baseURL + "/api/files/" + audioID[0]
   updateURL = baseURL + "/" + audioID
 
-  window.onkeydown = function(e) {
+  window.onkeydown = function (e) {
     if (e.keyCode == 32 && e.target == document.body) {
       e.preventDefault();
       wavesurfer.playPause();
+    }
+    if (e.keyCode == 76 && e.target == document.body) {
+      e.preventDefault()
+      loop = !loop
     }
   };
 
@@ -163,17 +171,24 @@
     const _notes = regions[_id].notes
     setNotes(_notes)
     SYNC(regions)
+    lastRegionStart = e.start
+    lastRegionEnd = e.end
   });
 
-
+  wavesurfer.on('pause', e => {
+    if (loop && lastRegionStart && lastRegionEnd) {
+      wavesurfer.play(lastRegionStart, [lastRegionEnd])
+    } 
+  })
   // Select a region
   wavesurfer.on('region-click', (e) => {
     const _id = e.id
     const _notes = regions[_id].notes
-
-    wavesurfer.play(e.start, [e.end])
     selectedRegion = e
     setNotes(_notes)
+    lastRegionStart = e.start
+    lastRegionEnd = e.end
+    wavesurfer.play(e.start, [e.end])
   });
 
 
