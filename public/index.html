@@ -1,14 +1,53 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <title>Single file upload</title>
-</head>
-<body>
 
-<form action="/upload" method="post" enctype="multipart/form-data">
-    <input type="file" name="file"><br><br>
-    <input type="submit" value="Submit">
-</form>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.6.0/css/bulma.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+
+<body>
+    <div class="file is-boxed is-centered is-large">
+        <label class="file-label">
+            <input id="fi" class="file-input" type="file" name="resume">
+            <span class="file-cta">
+                <span class="file-icon">
+                    <i class="fa fa-upload"></i>
+                </span>
+                <span class="file-label">
+                    Choose a file…
+                </span>
+            </span>
+        </label>
+    </div>
 </body>
+
 </html>
+
+<script>
+    // Select your input type file and store it in a variable
+    const input = document.getElementById('fi');
+    // Event handler executed when a file is selected
+    const onSelectFile = (files) => {
+        // Files is a list because you can select several files
+        // We just upload the first selected file
+        var data = new FormData()
+        data.append('file', input.files[0])
+        data.append('user', 'hubot')
+
+        fetch('/upload', {
+            method: 'POST',
+            body: data
+        }).then((res) => {
+            return res.text();
+        }).then((j) => {
+            console.log(j)
+            window.location.href = window.location.origin + "/" + j
+        })
+    };
+
+    input.addEventListener('change', onSelectFile, false);
+</script>

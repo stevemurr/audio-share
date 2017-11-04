@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"murrman/audio-share/model"
 	"murrman/audio-share/storage"
@@ -50,7 +49,8 @@ func (h *Handler) Upload(c echo.Context) error {
 		Hash:       getMD5Hash(dst.String()),
 	}
 	h.DB.PutAudio(audio.Hash, audio)
-	return c.Redirect(http.StatusPermanentRedirect, fmt.Sprintf("http://audio-share.2017ditrfest.info/%s", audio.Hash))
+	return c.String(http.StatusOK, audio.Hash)
+	// return c.Redirect(http.StatusPermanentRedirect, fmt.Sprintf("http://audio-share.2017ditrfest.info/%s", audio.Hash))
 }
 
 // List --
