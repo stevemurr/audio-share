@@ -47,6 +47,7 @@ func (h *Handler) Upload(c echo.Context) error {
 		Data:       dst.Bytes(),
 		UploadedAt: time.Now(),
 		Hash:       getMD5Hash(dst.String()),
+		Regions:    model.Regions{},
 	}
 	h.DB.PutAudio(audio.Hash, audio)
 	return c.String(http.StatusOK, audio.Hash)

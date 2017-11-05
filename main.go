@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"murrman/audio-share/handler"
-	"murrman/audio-share/storage/inmem"
+	"murrman/audio-share/storage/ondisk"
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -19,7 +19,7 @@ func init() {
 
 func main() {
 	e := echo.New()
-	db := inmem.New()
+	db := ondisk.New("db")
 	h := &handler.Handler{
 		DB: db,
 	}
